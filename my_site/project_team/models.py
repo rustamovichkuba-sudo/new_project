@@ -94,3 +94,80 @@ class Project(models.Model):
         ).count()
 
         return int((completed_tasks / total_tasks) * 100)
+
+class Tag(models.Model):
+    tag_name = models.CharField(max_length=30, unique=True)
+
+    def __str__(self):
+        return self.tag_name
+
+
+class Task(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    completed = models.BooleanField(default=False)
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='medium'
+    )
+    deadline = models.DateTimeField(null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    project = models.ForeignKey(
+        'Project',
+        related_name='tasks',
+        on_delete=models.CASCADE
+    )
+
+    assignee = models.ForeignKey(
+        'UserProfile',
+        related_name='assigned_tasks',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+
+    tags = models.ManyToManyField(Tag, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def get_progress(self):
+        total = self.subtasks.count()
+
+        if total == 0:
+            return 0
+
+        completed = self.subtasks.filter(completed=True).count()
+        return int((completed / total) * 100)
+
+    def get_comments_count(self):
+        return self.comments.count()
+
+    def is_overdue(self):
+        if self.deadline is None:
+            return False
+
+        from django.utils import timezone
+        return self.deadline < timezone.now() and not self.completed
+
+
+class Subtask(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name='subtasks',
+        on_delete=models.CASCADE
+    )
+
+    title = models.CharField(max_length=100)
+    completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
