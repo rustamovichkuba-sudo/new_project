@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 
 
-
 def validate_age(value):
     if value < 14 or value > 70:
         raise ValidationError(
