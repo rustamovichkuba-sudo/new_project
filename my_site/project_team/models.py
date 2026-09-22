@@ -90,3 +90,67 @@ class Project(models.Model):
         ).count()
 
         return int((completed_tasks / total_tasks) * 100)
+
+
+
+class TaskFile(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name="files",
+        on_delete=models.CASCADE
+    )
+    file = models.FileField(upload_to="task_files/")
+
+    def __str__(self):
+        return f"Файл для задачи: {self.task}"
+
+
+class Comment(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name="comments",
+        on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(
+        UserProfile,
+        on_delete=models.CASCADE
+    )
+    text = models.TextField()
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Комментарий {self.user} к {self.task}"
+
+
+class Favorite(models.Model):
+    user = models.OneToOneField(
+        UserProfile,
+        related_name="favorite",
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return f"Избранное пользователя {self.user}"
+
+
+class FavoriteItem(models.Model):
+    favorite = models.ForeignKey(
+        Favorite,
+        related_name="items",
+        on_delete=models.CASCADE
+    )
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["favorite", "task"],
+                name="unique_favorite_task"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.task} в избранном {self.favorite.user}"
